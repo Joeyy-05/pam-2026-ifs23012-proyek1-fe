@@ -127,6 +127,8 @@ fun AuthLoginScreen(
             }
 
             is AuthUIState.Success -> {
+                // Biarkan isProcessLogin tetap true agar layar tetap menahan LoadingUI()
+                // dengan tenang sampai RouteHelper selesai memindahkan pengguna ke Home.
                 RouteHelper.to(
                     navController,
                     ConstHelper.RouteNames.Home.path,

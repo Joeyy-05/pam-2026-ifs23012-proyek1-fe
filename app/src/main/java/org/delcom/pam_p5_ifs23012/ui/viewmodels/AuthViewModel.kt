@@ -22,6 +22,7 @@ sealed interface AuthUIState {
     data class Success(val data: ResponseAuthLogin) : AuthUIState
     data class Error(val message: String) : AuthUIState
     object Loading : AuthUIState
+    // HAPUS object Idle
 }
 
 sealed interface AuthActionUIState {
@@ -37,6 +38,7 @@ sealed interface AuthLogoutUIState {
 }
 
 data class UIStateAuth(
+    // KEMBALIKAN default ke Loading
     val auth: AuthUIState = AuthUIState.Loading,
     var authRegister: AuthActionUIState = AuthActionUIState.Loading,
     var authLogout: AuthLogoutUIState = AuthLogoutUIState.Loading,
@@ -138,11 +140,15 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             authTokenPref.clearAuthToken()
             authTokenPref.clearRefreshToken()
+
+            // [PERBAIKAN]: Reset state auth agar memori token akun lama terhapus dari StateFlow
             _uiState.update {
                 it.copy(
-                    authLogout = AuthLogoutUIState.Loading
+                    authLogout = AuthLogoutUIState.Loading,
+                    auth = AuthUIState.Error("Telah Logout") // Sengaja di-set Error agar state Success lama hilang
                 )
             }
+
             _uiState.update { it ->
                 val tmpState = runCatching {
                     repository.postLogout(

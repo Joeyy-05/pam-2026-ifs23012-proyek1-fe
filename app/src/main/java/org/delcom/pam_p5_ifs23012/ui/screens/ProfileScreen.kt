@@ -143,6 +143,7 @@ fun ProfileScreen(
     fun onLogout(token: String){
         isLoading = true
         authViewModel.logout(token)
+        todoViewModel.clearData()
     }
 
     LaunchedEffect(uiStateAuth.authLogout) {

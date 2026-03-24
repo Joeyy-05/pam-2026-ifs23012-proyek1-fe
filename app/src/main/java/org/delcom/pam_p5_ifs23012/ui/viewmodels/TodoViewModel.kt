@@ -178,4 +178,11 @@ class TodoViewModel @Inject constructor(
             _uiState.update { it.copy(todoDelete = tmpState) }
         }
     }
+
+    // [PERBAIKAN]: Fungsi untuk menghapus semua sisa data profile & todos dari memori
+    fun clearData() {
+        _uiState.update {
+            UIStateTodo() // Mengembalikan state ke kondisi awal bawaan (Loading/Kosong)
+        }
+    }
 }

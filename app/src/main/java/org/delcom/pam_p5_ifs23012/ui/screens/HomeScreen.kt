@@ -46,6 +46,7 @@ import org.delcom.pam_p5_ifs23012.ui.viewmodels.AuthLogoutUIState
 import org.delcom.pam_p5_ifs23012.ui.viewmodels.AuthUIState
 import org.delcom.pam_p5_ifs23012.ui.viewmodels.AuthViewModel
 import org.delcom.pam_p5_ifs23012.ui.viewmodels.TodoViewModel
+import org.delcom.pam_p5_ifs23012.ui.viewmodels.TodosUIState // Pastikan ini di-import
 
 @Composable
 fun HomeScreen(
@@ -54,6 +55,9 @@ fun HomeScreen(
     todoViewModel: TodoViewModel
 ) {
     val uiStateAuth by authViewModel.uiState.collectAsState()
+
+    // [PERBAIKAN 1]: Pantau state daftar Todo (Perabotan) dari ViewModel
+    val uiStateTodo by todoViewModel.uiState.collectAsState()
 
     var isLoading by remember { mutableStateOf(false) }
     var isFreshToken by remember { mutableStateOf(false) }
@@ -105,9 +109,28 @@ fun HomeScreen(
         }
     }
 
+    // [PERBAIKAN 2]: Panggil data dari API tepat setelah authToken berhasil didapatkan
+    LaunchedEffect(authToken) {
+        authToken?.let { token ->
+            todoViewModel.getAllTodos(token)
+        }
+    }
+
     if (isLoading || authToken == null || isFreshToken) {
         LoadingUI()
         return
+    }
+
+    // [PERBAIKAN 3]: Hitung jumlah data berdasarkan status isDone
+    var totalTodos = 0
+    var doneTodos = 0
+    var pendingTodos = 0
+
+    if (uiStateTodo.todos is TodosUIState.Success) {
+        val todoList = (uiStateTodo.todos as TodosUIState.Success).data
+        totalTodos = todoList.size
+        doneTodos = todoList.count { it.isDone }
+        pendingTodos = todoList.count { !it.isDone }
     }
 
     val menuItems = listOf(
@@ -132,19 +155,20 @@ fun HomeScreen(
             customMenuItems = menuItems
         )
         Box(modifier = Modifier.weight(1f)) {
-            HomeUI()
+            // [PERBAIKAN 4]: Teruskan hasil perhitungan ke fungsi UI
+            HomeUI(
+                totalTodos = totalTodos,
+                doneTodos = doneTodos,
+                pendingTodos = pendingTodos
+            )
         }
         BottomNavComponent(navController = navController)
     }
 }
 
+// [PERBAIKAN 5]: Tangkap data yang diteruskan sebagai parameter
 @Composable
-fun HomeUI() {
-    // Nantinya nilai ini bisa dihubungkan ke TodoViewModel jika ingin dibuat dinamis
-    val totalTodos = 0
-    val doneTodos = 0
-    val pendingTodos = 0
-
+fun HomeUI(totalTodos: Int, doneTodos: Int, pendingTodos: Int) {
     Column(modifier = Modifier.padding(top = 16.dp)) {
         // Header App disesuaikan dengan tema
         Card(
@@ -170,18 +194,18 @@ fun HomeUI() {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             StatusCard(
-                title = "Total Barang", // Disesuaikan
-                value = totalTodos.toString(),
+                title = "Total Barang",
+                value = totalTodos.toString(), // Akan otomatis berubah
                 icon = Icons.AutoMirrored.Filled.List
             )
             StatusCard(
-                title = "Terjual", // Disesuaikan
-                value = doneTodos.toString(),
+                title = "Terjual",
+                value = doneTodos.toString(), // Akan otomatis berubah
                 icon = Icons.Default.CheckCircle
             )
             StatusCard(
-                title = "Tersedia", // Disesuaikan
-                value = pendingTodos.toString(),
+                title = "Tersedia",
+                value = pendingTodos.toString(), // Akan otomatis berubah
                 icon = Icons.Default.Schedule
             )
         }
@@ -192,6 +216,6 @@ fun HomeUI() {
 @Composable
 fun PreviewHomeUI() {
     DelcomTheme {
-        HomeUI()
+        HomeUI(totalTodos = 5, doneTodos = 2, pendingTodos = 3) // Preview menggunakan data dummy
     }
 }
